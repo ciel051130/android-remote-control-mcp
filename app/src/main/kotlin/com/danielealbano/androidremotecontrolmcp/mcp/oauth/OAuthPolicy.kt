@@ -55,16 +55,17 @@ object OAuthPolicy {
      */
     fun isAllowedRedirectUri(uri: String): Boolean {
         if (uri in ALLOWED_REDIRECT_URIS) return true
-        val parsed = runCatching { URI(uri) }.getOrNull() ?: return false
-        val host = parsed.host?.removePrefix("[")?.removeSuffix("]") ?: return false
 
+        val parsed = runCatching { URI(uri) }.getOrNull()
+        val host = parsed?.host?.removePrefix("[")?.removeSuffix("]")
         val isChatGptConnectorCallback =
-            parsed.scheme == "https" &&
+            parsed != null &&
+                parsed.scheme == "https" &&
                 host == CHATGPT_REDIRECT_HOST &&
                 parsed.path?.startsWith(CHATGPT_REDIRECT_PATH_PREFIX) == true
-        if (isChatGptConnectorCallback) return true
+        val isLoopback = parsed != null && parsed.scheme == "http" && host in LOOPBACK_HOSTS
 
-        return parsed.scheme == "http" && host in LOOPBACK_HOSTS
+        return isChatGptConnectorCallback || isLoopback
     }
 
     /**
